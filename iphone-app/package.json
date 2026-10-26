@@ -1,0 +1,12 @@
+{
+  "name": "linlithgow-rugby-scores",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Linlithgow Rugby Scores iPhone app",
+  "scripts": {
+    "setup": "npx cap add ios && bash scripts/ios-permissions.sh && npx cap sync ios",
+    "icons": "npx @capacitor/assets generate --ios",
+    "sync": "npx cap sync ios",
+    "open": "npx cap open ios"
+  }
+}

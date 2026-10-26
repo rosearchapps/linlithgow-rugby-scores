@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Linlithgow Rugby Scores</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;700;800&family=Barlow:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+:root{
+  --pitch:#1d4a2c; --pitch-2:#245a36; --chalk:#f3f5ef; --muted:#a9c2ae; --line:rgba(243,245,239,.22);
+  --flag:#ffd54a; --red:#c8102e; --black:#111; --card:rgba(0,0,0,.22);
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --pitch:#10281a; --pitch-2:#173622; } }
+:root[data-theme="dark"]{ --pitch:#10281a; --pitch-2:#173622; }
+*,*::before,*::after{box-sizing:inherit}
+html,body{height:100%;margin:0}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--pitch);background-image:repeating-linear-gradient(180deg,var(--pitch) 0 64px,var(--pitch-2) 64px 128px);
+  color:var(--chalk);font-family:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-tap-highlight-color:transparent}
+main{max-width:720px;margin:0 auto;padding:14px 14px 40px}
+[hidden]{display:none!important}
+button{font:inherit;cursor:pointer;border:0;border-radius:10px;color:inherit}
+button:disabled{opacity:.4;cursor:default}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--flag);outline-offset:2px}
+.ghost{background:transparent;border:1.5px solid var(--line);padding:10px 14px;font-weight:600}
+.primary{background:var(--chalk);color:#14251a;font-weight:700;padding:15px;font-size:1.1rem;width:100%}
+.danger{background:var(--red);color:#fff;font-weight:700;padding:14px;width:100%}
+.hoops{height:14px;border-radius:7px;background:repeating-linear-gradient(90deg,var(--red) 0 18px,var(--black) 18px 36px)}
+h1{font:800 2.3rem/1 "Saira Condensed",Impact,"Arial Narrow",sans-serif;margin:12px 0 4px;letter-spacing:.01em}
+h2{font:700 1.35rem "Saira Condensed",Impact,"Arial Narrow",sans-serif;margin:22px 0 8px}
+.lead{color:var(--muted);margin:0 0 18px}
+.field{margin-bottom:18px}
+.field>label,.field>.lab{display:block;font-weight:700;margin-bottom:7px}
+select,input[type=text],input[type=number],textarea{width:100%;font:600 1.05rem "Barlow",system-ui,sans-serif;color:var(--chalk);
+  background:var(--card);border:1.5px solid var(--line);border-radius:10px;padding:12px}
+select option,select optgroup{color:#111;background:#fff}
+textarea{font-weight:400;min-height:110px;resize:vertical}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.seg button{background:var(--card);border:1.5px solid var(--line);padding:13px;font-weight:700}
+.seg button[aria-pressed="true"]{background:var(--chalk);color:#14251a;border-color:var(--chalk)}
+.small{font-size:.88rem;color:var(--muted);margin:7px 0 0}
+.linkbtn{background:none;padding:0;color:var(--chalk);text-decoration:underline;font-weight:600;font-size:.92rem}
+.colours{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap}
+.colours input[type=color]{width:48px;height:40px;border:1.5px solid var(--line);border-radius:8px;background:none;padding:2px}
+.kit{width:46px;height:46px;border-radius:50%;flex:none;border:2px solid rgba(255,255,255,.6)}
+.vs{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:14px;padding:12px;margin-bottom:18px}
+.vs b{font:800 1.4rem "Saira Condensed",sans-serif}
+
+/* match */
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.time{font:700 2.4rem "Saira Condensed",Impact,"Arial Narrow",sans-serif;font-variant-numeric:tabular-nums;line-height:1}
+.time .ot{color:var(--flag);font-size:1.5rem;margin-left:6px}
+.half{font-size:.92rem;color:var(--muted);margin-top:3px}
+.half.over{color:var(--flag);font-weight:700}
+.ctl{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.board{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.team{border-radius:16px;overflow:hidden;background:var(--card)}
+.team .stripe{height:16px;background:repeating-linear-gradient(90deg,var(--c1) 0 16px,var(--c2) 16px 32px)}
+.team .in{padding:10px 10px 12px}
+.tname{font-weight:700;text-align:center;font-size:1.02rem;line-height:1.15;min-height:2.3em;display:flex;align-items:center;justify-content:center}
+.tname small{display:block;font-weight:600;color:var(--muted);font-size:.78rem}
+.score{font:800 clamp(4.6rem,22vw,8.5rem)/1 "Saira Condensed",Impact,"Arial Narrow",sans-serif;text-align:center;margin:4px 0;font-variant-numeric:tabular-nums}
+.score.bump{animation:bump .35s ease-out}
+@keyframes bump{40%{transform:scale(1.12)}}
+@media (prefers-reduced-motion:reduce){.score.bump{animation:none}}
+.tally{text-align:center;color:var(--muted);font-size:.82rem;min-height:1.2em;margin-bottom:8px}
+.pts{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.pts button{background:var(--c1);color:var(--tx);padding:11px 3px;font-weight:700;font-size:.9rem;line-height:1.1;border:2px solid var(--c2)}
+.pts button b{display:block;font:800 1.45rem "Saira Condensed",Impact,sans-serif}
+.pts .wide{grid-column:span 2}
+.cam{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:12px}
+.cam svg{width:24px;height:24px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.status{color:var(--muted);font-size:.9rem;min-height:1.2em;margin-top:6px;text-align:center}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 16px);z-index:30;
+  background:#0b1a10;border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;gap:12px;align-items:center;
+  width:min(92vw,520px);box-shadow:0 8px 30px rgba(0,0,0,.4)}
+.toast span{flex:1}
+.toast button{background:var(--chalk);color:#14251a;font-weight:700;padding:9px 12px}
+
+/* log */
+ol.log{list-style:none;margin:0;padding:0}
+.log li{display:flex;gap:10px;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--line);font-size:.95rem}
+.log .m{font:700 1rem "Saira Condensed",sans-serif;min-width:3.4em;color:var(--muted);font-variant-numeric:tabular-nums}
+.log .dot{width:11px;height:11px;border-radius:50%;flex:none;align-self:center;border:1.5px solid rgba(255,255,255,.5)}
+.log .s{margin-left:auto;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.log .txt{flex:1;min-width:0;overflow-wrap:anywhere}
+.log li.note{color:var(--muted);font-style:italic;justify-content:center}
+.log li.com{background:rgba(255,255,255,.06);border-radius:8px;padding:8px;border-bottom:0;margin:4px 0}
+.log .who{font-weight:700;margin-right:6px}
+.log .x{background:transparent;color:var(--muted);padding:0 6px;font-size:1.15rem;line-height:1}
+.empty{color:var(--muted);font-size:.95rem;padding:6px 0}
+.addc{display:flex;gap:8px;margin-bottom:10px}
+.addc input{flex:1}
+
+/* photos */
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
+.gallery button{padding:0;position:relative;aspect-ratio:1;overflow:hidden;border-radius:10px;background:var(--card)}
+.gallery img{width:100%;height:100%;object-fit:cover;display:block}
+.gallery span{position:absolute;left:6px;bottom:6px;background:rgba(0,0,0,.65);font:700 .85rem "Saira Condensed",sans-serif;padding:2px 6px;border-radius:6px}
+
+/* overlays */
+.sheet{position:fixed;inset:0;z-index:20;background:rgba(5,14,8,.86);display:flex;align-items:flex-end;justify-content:center}
+.sheet .panel{background:#122c1b;border-radius:18px 18px 0 0;width:min(100%,720px);max-height:88%;overflow:auto;
+  padding:18px 16px calc(env(safe-area-inset-bottom,0px) + 18px)}
+.sheet h3{font:800 1.6rem "Saira Condensed",sans-serif;margin:0 0 12px}
+.players{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.players button{background:var(--card);border:1.5px solid var(--line);padding:13px 8px;font-weight:700}
+#askSheet{z-index:40}
+.viewer{position:fixed;inset:0;background:rgba(5,14,8,.95);z-index:25;display:flex;flex-direction:column;
+  padding:calc(env(safe-area-inset-top,0px) + 12px) 12px calc(env(safe-area-inset-bottom,0px) + 12px)}
+.viewer img{flex:1;min-height:0;width:100%;object-fit:contain}
+.viewer .bar{display:flex;gap:8px;margin-top:10px}
+.viewer .bar button{flex:1}
+.viewer .cap{text-align:center;color:var(--muted);margin-bottom:8px}
+
+/* summary */
+.result{border-radius:18px;overflow:hidden;background:var(--card);margin-bottom:6px}
+.result .bands{display:grid;grid-template-columns:1fr 1fr}
+.result .bands div{height:14px;background:repeating-linear-gradient(90deg,var(--c1) 0 16px,var(--c2) 16px 32px)}
+.result .body{padding:14px;text-align:center}
+.result .ft{font:700 1rem "Saira Condensed",sans-serif;letter-spacing:.12em;color:var(--muted)}
+.result .line{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin:8px 0}
+.result .nm{font-weight:700;font-size:1.05rem;line-height:1.15}
+.result .big{font:800 3.8rem/1 "Saira Condensed",Impact,sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap}
+.result .verdict{font:800 1.5rem "Saira Condensed",sans-serif;margin-top:4px}
+.result .meta{color:var(--muted);font-size:.9rem;margin-top:4px}
+.toggle{display:flex;align-items:center;gap:10px;margin:8px 0;font-weight:600}
+.toggle input{width:22px;height:22px}
+
+/* history */
+.hist{list-style:none;margin:0;padding:0}
+.hist li{border-bottom:1px solid var(--line);padding:10px 0}
+.hist .row{display:flex;align-items:center;gap:10px}
+.hist .open{flex:1;text-align:left;background:transparent;padding:4px 0;min-width:0}
+.hist .open b{display:block;font-weight:700}
+.hist .open span{display:block;color:var(--muted);font-size:.88rem}
+.hist .sc{font:800 1.6rem "Saira Condensed",sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap}
+.hist .confirm{display:flex;gap:8px;margin-top:8px}
+.hist .confirm button{flex:1}
+.wl{display:inline-block;font:700 .8rem "Barlow",sans-serif;border-radius:6px;padding:1px 7px;margin-right:6px;background:var(--chalk);color:#14251a}
+.wl.L{background:#e2b0b0}.wl.D{background:#cfcfcf}
+</style>
+</head>
+<body>
+<main>
+
+<!-- ============ SETUP ============ -->
+<section id="vSetup">
+  <div class="hoops"></div>
+  <h1 id="setupTitle">Linlithgow match day</h1>
+  <p class="lead">Who are Linlithgow playing today?</p>
+
+  <div class="field">
+    <label for="opp">Opponent</label>
+    <select id="opp"></select>
+    <input type="text" id="oppOther" placeholder="Team name" hidden style="margin-top:8px" autocomplete="off">
+    <div class="colours" id="oppColours" hidden>
+      <span class="kit" id="oppKit"></span>
+      <span style="font-weight:600">Their colours</span>
+      <input type="color" id="oppC1" aria-label="Main colour">
+      <input type="color" id="oppC2" aria-label="Second colour">
+    </div>
+    <p class="small" id="colNote" hidden>Colours are a best match. Tap a colour to correct it and it'll be remembered for this club.</p>
+  </div>
+
+  <div class="field">
+    <span class="lab">Home or away?</span>
+    <div class="seg" id="ha">
+      <button data-v="home" aria-pressed="true">Home</button>
+      <button data-v="away" aria-pressed="false">Away</button>
+    </div>
+    <p class="small"><button class="linkbtn" id="locBtn">Use my location</button> <span id="locNote"></span></p>
+  </div>
+
+  <div class="field">
+    <label for="age">Age group and match time</label>
+    <select id="age"></select>
+    <input type="number" id="customMin" min="10" max="120" step="1" placeholder="Total match minutes" inputmode="numeric" hidden style="margin-top:8px">
+    <p class="small" id="ageNote"></p>
+  </div>
+
+  <div class="field">
+    <label for="squad">Our players (optional)</label>
+    <textarea id="squad" placeholder="One name per line, e.g.&#10;Jamie&#10;Ross M&#10;Callum"></textarea>
+    <p class="small">Saved for next time. When Linlithgow score, you'll be asked who scored.</p>
+  </div>
+
+  <div class="vs" id="preview"></div>
+
+  <button class="primary" id="goBtn">Start match</button>
+  <button class="ghost" id="backBtn" style="width:100%;margin-top:10px" hidden>Back to match</button>
+  <button class="ghost" id="toHist1" style="width:100%;margin-top:10px">Previous matches</button>
+</section>
+
+<!-- ============ MATCH ============ -->
+<section id="vMatch" hidden>
+  <div class="topbar">
+    <div>
+      <div class="time" id="time">0:00</div>
+      <div class="half" id="half">First half</div>
+    </div>
+    <div class="ctl">
+      <button class="ghost" id="startBtn">Start clock</button>
+      <button class="ghost" id="halfBtn">Half time</button>
+    </div>
+  </div>
+
+  <div class="board" id="board"></div>
+
+  <button class="primary cam" id="camBtn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.5"/></svg>
+    Take photo
+  </button>
+  <input type="file" id="camInput" accept="image/*" capture="environment" hidden>
+
+  <div class="grid2">
+    <button class="ghost" id="undoBtn">Undo last score</button>
+    <button class="ghost" id="editBtn">Edit match</button>
+  </div>
+  <button class="danger" id="endBtn" style="margin-top:10px">End game</button>
+
+  <h2>Match log and commentary</h2>
+  <div class="addc">
+    <input type="text" id="quickC" placeholder="Add a comment at this minute" aria-label="Comment">
+    <button class="ghost" id="quickBtn">Add</button>
+  </div>
+  <button class="ghost waOpen" style="width:100%;margin-bottom:8px">Paste commentary from WhatsApp</button>
+  <ol class="log" id="log"></ol>
+
+  <h2>Photos</h2>
+  <div class="gallery" id="gallery"></div>
+
+  <button class="ghost" id="toHist2" style="width:100%;margin-top:22px">Previous matches</button>
+</section>
+
+<!-- ============ SUMMARY ============ -->
+<section id="vSummary" hidden>
+  <div class="result" id="resultCard"></div>
+  <div class="grid2">
+    <button class="primary" id="shareBtn" style="grid-column:span 2">Share result</button>
+    <button class="ghost" id="copyBtn">Copy as text</button>
+    <button class="ghost" id="imgBtn">Save result image</button>
+  </div>
+  <div class="status" id="shareStatus" aria-live="polite"></div>
+
+  <h2>Scoring</h2>
+  <label class="toggle"><input type="checkbox" id="incCom" checked> Include commentary</label>
+  <button class="ghost waOpen" style="width:100%;margin-bottom:8px">Paste commentary from WhatsApp</button>
+  <ol class="log" id="sumLog"></ol>
+
+  <h2>Photos</h2>
+  <div class="gallery" id="sumGallery"></div>
+  <button class="ghost" id="saveAllBtn" style="width:100%;margin-top:10px" hidden>Save all photos to phone</button>
+
+  <div class="grid2" style="margin-top:22px">
+    <button class="ghost" id="reopenBtn">Reopen game</button>
+    <button class="ghost" id="toHist3">Previous matches</button>
+  </div>
+  <button class="primary" id="newBtn" style="margin-top:10px">New match</button>
+</section>
+
+<!-- ============ HISTORY ============ -->
+<section id="vHistory" hidden>
+  <div class="hoops"></div>
+  <h1>Previous matches</h1>
+  <p class="lead" id="histNote"></p>
+  <ol class="hist" id="hist"></ol>
+  <div id="delAllWrap" style="margin-top:20px">
+    <button class="ghost" id="delAll" style="width:100%">Delete all matches</button>
+    <div class="grid2" id="delAllConfirm" hidden>
+      <button class="danger" id="delAllYes">Yes, delete all</button>
+      <button class="ghost" id="delAllNo">Cancel</button>
+    </div>
+  </div>
+  <button class="primary" id="histNew" style="margin-top:12px">New match</button>
+  <button class="ghost" id="histBack" style="width:100%;margin-top:10px" hidden>Back to current match</button>
+</section>
+</main>
+
+<!-- who scored -->
+<div class="sheet" id="whoSheet" hidden role="dialog" aria-label="Who scored">
+  <div class="panel">
+    <h3 id="whoTitle">Who scored?</h3>
+    <div class="players" id="whoList"></div>
+    <button class="ghost" id="whoSkip" style="width:100%">Skip</button>
+  </div>
+</div>
+
+<!-- WhatsApp -->
+<div class="sheet" id="waSheet" hidden role="dialog" aria-label="Paste commentary">
+  <div class="panel">
+    <h3>Commentary from WhatsApp</h3>
+    <textarea id="waText" placeholder="Paste the copied WhatsApp messages here"></textarea>
+    <p class="small">In WhatsApp, press and hold a message, choose Select, tick all the commentary messages, then Copy. Paste here and they'll slot in at the right minutes using their times.</p>
+    <div class="grid2">
+      <button class="primary" id="waAdd" style="grid-column:span 2">Add to match</button>
+      <button class="ghost" id="waFileBtn">Choose exported chat</button>
+      <button class="ghost" id="waClose">Close</button>
+    </div>
+    <input type="file" id="waFile" accept=".txt,.zip,text/plain,application/zip" hidden>
+    <div class="status" id="waStatus" aria-live="polite"></div>
+  </div>
+</div>
+
+<!-- photo viewer -->
+<div class="viewer" id="viewer" hidden role="dialog" aria-label="Photo">
+  <div class="cap" id="viewCap"></div>
+  <img id="viewImg" alt="Match photo">
+  <div class="bar">
+    <button class="ghost" id="vSave">Save to phone</button>
+    <button class="ghost" id="vDel">Delete</button>
+    <button class="ghost" id="vClose">Close</button>
+  </div>
+</div>
+
+<!-- in-app confirm (browser pop-ups are blocked inside the Claude app) -->
+<div class="sheet" id="askSheet" hidden role="alertdialog" aria-labelledby="askMsg">
+  <div class="panel">
+    <h3 id="askMsg"></h3>
+    <div class="grid2">
+      <button class="danger" id="askYes">Yes</button>
+      <button class="ghost" id="askNo">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden><span id="toastMsg"></span><button id="toastBtn">Save to Photos</button></div>
+
+<script>
+/* ================= Data ================= */
+const US={name:"Linlithgow",c1:"#c8102e",c2:"#111111"};
+const LINLITHGOW={lat:55.9765,lng:-3.6003};
+// Club | main colour | second colour (best-known; editable in the app)
+const CLUBS=`Aberdeen Grammar|#1b2a5b|#ffffff
+Aberdeen University|#0b3d91|#f2c200
+Aberdeen Wanderers|#1f4fa3|#ffffff
+Aberdeenshire|#c8102e|#ffffff
+Alloa|#111111|#f2a900
+Annan|#c8102e|#ffffff
+Arbroath|#c8102e|#ffffff
+Ardrossan Academicals|#1b2a5b|#c8102e
+Ayr|#e5007e|#111111
+Biggar|#111111|#c8102e
+Bishopton|#c8102e|#111111
+Blairgowrie|#0057a8|#ffffff
+Bo'ness|#1f4fa3|#ffffff
+Boroughmuir|#006a35|#111111
+Broughton|#1b2a5b|#ffffff
+Cambuslang|#c8102e|#111111
+Carrick|#1f4fa3|#ffffff
+Cartha Queens Park|#7a003c|#ffffff
+Clackmannan|#1f4fa3|#ffffff
+Corstorphine Cougars|#ffcc00|#111111
+Crieff & Strathearn|#006a35|#ffffff
+Cumnock|#111111|#ffffff
+Cupar|#1f4fa3|#ffffff
+Currie Chieftains|#f2a900|#111111
+Dalkeith|#c8102e|#ffffff
+Dalziel|#c8102e|#ffffff
+Dumfries Saints|#1f4fa3|#ffffff
+Dunbar|#7a003c|#ffffff
+Dundee|#1b2a5b|#c8102e
+Dunfermline|#1b2a5b|#ffffff
+Duns|#c8102e|#ffffff
+Earlston|#c8102e|#111111
+East Kilbride|#c8102e|#ffffff
+Edinburgh Academicals|#1f4fa3|#ffffff
+Edinburgh Northern|#1f4fa3|#ffffff
+Edinburgh University|#c8102e|#ffffff
+Edinburgh Wanderers|#c8102e|#111111
+Ellon|#1b2a5b|#ffffff
+Falkirk|#1b2a5b|#ffffff
+Forrester|#1b2a5b|#ffffff
+Gala|#7a1f2b|#ffffff
+Garnock|#006a35|#ffffff
+GHA|#111111|#ffffff
+Glasgow Academicals|#1b2a5b|#ffffff
+Glasgow Hawks|#c8102e|#111111
+Glasgow High Kelvinside|#1b2a5b|#ffffff
+Glenrothes|#c8102e|#ffffff
+Gordonians|#1f4fa3|#ffffff
+Grangemouth Stags|#c8102e|#ffffff
+Greenock Wanderers|#006a35|#ffffff
+Haddington|#c8102e|#111111
+Hamilton|#c8102e|#ffffff
+Hawick|#006a35|#ffffff
+Heriot's|#1f4fa3|#ffffff
+Highland|#006a35|#ffffff
+Hillfoots|#c8102e|#ffffff
+Howe of Fife|#1b2a5b|#c8102e
+Inverleith|#111111|#ffffff
+Irvine|#c8102e|#111111
+Jed-Forest|#1f4fa3|#ffffff
+Kelso|#111111|#ffffff
+Kilmarnock|#c8102e|#ffffff
+Kinross|#1b2a5b|#ffffff
+Kirkcaldy|#1f4fa3|#ffffff
+Lanark|#c8102e|#ffffff
+Langholm|#c8102e|#ffffff
+Lasswade|#c8102e|#111111
+Leith|#1b2a5b|#ffffff
+Lenzie|#1b2a5b|#ffffff
+Liberton|#111111|#c8102e
+Livingston|#111111|#f2a900
+Lochaber|#1b2a5b|#ffffff
+Lomond|#1b2a5b|#ffffff
+Madras|#1b2a5b|#ffffff
+Marr|#c8102e|#111111
+Melrose|#ffcc00|#111111
+Moray|#1b2a5b|#ffffff
+Morgan Academy FP|#1b2a5b|#ffffff
+Murrayfield Wanderers|#1b2a5b|#ffffff
+Musselburgh|#1f4fa3|#ffffff
+North Berwick|#1b2a5b|#c8102e
+Oban Lorne|#1b2a5b|#ffffff
+Orkney|#c8102e|#111111
+Paisley|#c8102e|#ffffff
+Peebles|#c8102e|#ffffff
+Perthshire|#006a35|#ffffff
+Portobello|#1b2a5b|#ffffff
+Preston Lodge|#7a003c|#111111
+Queensferry|#1f4fa3|#ffffff
+Ross High|#1b2a5b|#ffffff
+Ross Sutherland|#1b2a5b|#ffffff
+Royal High Corstorphine|#111111|#ffffff
+St Andrews University|#1b2a5b|#ffffff
+Selkirk|#1b2a5b|#ffffff
+Shetland|#1b2a5b|#ffffff
+Stewart's Melville|#c8102e|#111111
+Stewartry|#1b2a5b|#ffffff
+Stirling County|#c8102e|#111111
+Strathendrick|#006a35|#111111
+Strathmore|#1b2a5b|#ffffff
+Trinity Academicals|#1b2a5b|#ffffff
+Uddingston|#1f4fa3|#ffffff
+Walkerburn|#1b2a5b|#ffffff
+Watsonians|#7a003c|#ffffff
+West of Scotland|#c8102e|#ffcc00
+Whitecraigs|#1b2a5b|#ffffff
+Wigtownshire|#1b2a5b|#ffffff`.split("\n").map(l=>{const [n,c1,c2]=l.split("|");return{name:n,c1,c2};});
+
+// Scottish Rugby maximum game times (Age Grade Law Variations)
+const AGES=[
+  {id:"sen",label:"Senior",total:80},
+  {id:"u18",label:"U18",total:70},
+  {id:"u16",label:"U16",total:70},
+  {id:"u15",label:"U15 (S3)",total:60},
+  {id:"u14",label:"U14 (S2)",total:60},
+  {id:"u13",label:"U13 (S1)",total:45},
+  {id:"u12",label:"U12 (P7)",total:40},
+  {id:"u11",label:"U11 (P6)",total:30},
+  {id:"u10",label:"U10 (P5)",total:20},
+  {id:"u9",label:"U9 (P4)",total:20},
+  {id:"custom",label:"Custom time",total:0}
+];
+const PTS={try:[5,"Try"],con:[2,"Conversion"],pen:[3,"Penalty goal"],drop:[3,"Drop goal"],ptry:[7,"Penalty try"]};
+
+/* ================= Helpers ================= */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+function txtOn(hex){const h=hex.replace("#","");const r=parseInt(h.substr(0,2),16),g=parseInt(h.substr(2,2),16),b=parseInt(h.substr(4,2),16);
+  return (0.299*r+0.587*g+0.114*b)/255>0.62?"#111":"#fff";}
+const halfLabel=t=>{const h=t/2;return Number.isInteger(h)?String(h):h.toFixed(1).replace(".5","½");};
+const fmtClock=ms=>{const t=Math.floor(ms/1000);return Math.floor(t/60)+":"+String(t%60).padStart(2,"0")};
+const fmtDate=ms=>new Date(ms).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",year:"numeric"});
+const slug=s=>s.replace(/[^a-z0-9]+/gi,"-").replace(/^-|-$/g,"");
+
+function ask(msg,yes="Yes"){
+  return new Promise(res=>{
+    $("askMsg").textContent=msg;$("askYes").textContent=yes;$("askNo").hidden=false;$("askSheet").hidden=false;
+    const done=v=>{$("askSheet").hidden=true;res(v);};
+    $("askYes").onclick=()=>done(true);$("askNo").onclick=()=>done(false);
+  });
+}
+function tell(msg){
+  $("askMsg").textContent=msg;$("askYes").textContent="OK";$("askNo").hidden=true;$("askSheet").hidden=false;
+  $("askYes").onclick=()=>{$("askSheet").hidden=true;};
+}
+
+/* ================= Native (iPhone app) ================= */
+const NATIVE=!!(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform());
+const NP=NATIVE?Capacitor.Plugins:{};
+const ALBUM="Linlithgow Rugby Scores";
+function toB64(blob){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(",")[1]);r.onerror=rej;r.readAsDataURL(blob);});}
+async function cacheFile(file){const r=await NP.Filesystem.writeFile({path:file.name,data:await toB64(file),directory:"CACHE"});return r.uri;}
+let albumId=null;
+async function getAlbum(){
+  if(albumId)return albumId;
+  let {albums}=await NP.Media.getAlbums();let a=albums.find(x=>x.name===ALBUM);
+  if(!a){await NP.Media.createAlbum({name:ALBUM});({albums}=await NP.Media.getAlbums());a=albums.find(x=>x.name===ALBUM);}
+  albumId=a?a.identifier:null;return albumId;
+}
+async function saveToAlbum(file){
+  const path=await cacheFile(file),albumIdentifier=await getAlbum();
+  await NP.Media.savePhoto(albumIdentifier?{path,albumIdentifier}:{path});
+}
+async function nativeShare(text,files){
+  const opts={};if(text)opts.text=text;
+  if(files&&files.length)opts.files=await Promise.all(files.map(cacheFile));
+  try{await NP.Share.share(opts);}catch(e){}
+}
+
+/* ================= State ================= */
+let matches=LS.get("lrs-matches",{});
+let currentId=LS.get("lrs-current","");
+let squad=LS.get("lrs-squad",[]);
+let colourOverrides=LS.get("lrs-colours",{});
+let S=null;           // current match
+let view="setup";
+let editing=false;
+
+function newMatch(){
+  return {matchId:String(Date.now()),created:Date.now(),teams:[{...US},{name:"",c1:"#1b2a5b",c2:"#ffffff"}],us:0,
+    venue:"home",age:"u16",total:70,events:[],comments:[],photos:[],kick1:0,kick2:0,end1:0,endAt:0,
+    elapsed:0,running:false,startedAt:0,half:1,done:false,updatedAt:Date.now()};
+}
+// Bring older saves (earlier versions of the app) into the current shape
+function normalise(m){
+  if(!m)return null;
+  m=Object.assign(newMatch(),m);
+  if(!m.teams||!m.teams[0]||!m.teams[0].name){
+    const n=m.names||["Home","Away"];
+    const us=n.findIndex(x=>/linlithgow/i.test(x));
+    m.teams=n.map((name,i)=>i===us?{...US}:{name,c1:i?"#2b5fb4":"#c2353b",c2:"#ffffff"});
+    if(us>=0){m.us=us;m.venue=us===0?"home":"away";}else{m.us=-1;}
+  }
+  if(!m.created)m.created=+m.matchId||m.updatedAt||Date.now();
+  m.events=(m.events||[]).map(e=>e.e!=null?e:{...e,e:e.h===2?Math.max(0,(e.ms||0)-m.total/2*60000):(e.ms||0)});
+  m.comments=(m.comments||[]).map(c=>c.when||c.e!=null?c:(c.ms==null?{...c,when:0}:{...c,h:c.h||1,e:c.h===2?Math.max(0,c.ms-m.total/2*60000):c.ms}));
+  m.photos=m.photos||[];
+  if(!m.age)m.age="custom";
+  return m;
+}
+// One-off import from earlier versions
+if(!LS.get("lrs-migrated",false)){
+  const old=Object.values(LS.get("rugby-union-history",{}));
+  const cur=LS.get("rugby-union-score-v2",null);
+  if(cur&&(!cur.setup||(cur.events||[]).length))old.push(cur);
+  old.forEach(o=>{const m=normalise(o);if(m&&!matches[m.matchId])matches[m.matchId]=m;});
+  if(cur&&matches[cur.matchId]&&!cur.done)currentId=cur.matchId;
+  LS.set("lrs-matches",matches);LS.set("lrs-current",currentId);LS.set("lrs-migrated",true);
+}
+Object.keys(matches).forEach(k=>matches[k]=normalise(matches[k]));
+
+function save(){
+  if(!S)return;
+  S.updatedAt=Date.now();
+  matches[S.matchId]=S;
+  LS.set("lrs-matches",matches);
+  LS.set("lrs-current",S.done?"":S.matchId);
+  queueCloud(S);
+}
+
+/* ================= Online backup (private to you) ================= */
+let cloud=null,cloudTimer=null;
+function queueCloud(m){clearTimeout(cloudTimer);cloudTimer=setTimeout(()=>pushCloud(m),1500);}
+async function pushCloud(m){
+  if(!cloud||!m)return;
+  const sc=scores(m);
+  try{await cloud.doc("m"+m.matchId).set({matchId:m.matchId,names:m.teams.map(t=>t.name),score:sc,done:!!m.done,
+    updatedAt:m.updatedAt||Date.now(),state:JSON.stringify(m)});}catch(e){}
+}
+(async()=>{
+  try{
+    const [d,u]=await Promise.all([claude.use("db"),claude.use("user")]);
+    const uid=u?await u.id():null;
+    if(!d||!uid)return;
+    cloud=d.collection("data/users/"+uid);
+    const snap=await cloud.orderBy("updatedAt","desc").limit(200).get();
+    let changed=false;
+    snap.docs.forEach(x=>{
+      let m;try{m=normalise(JSON.parse(x.data().state))}catch(e){return}
+      if(!m)return;
+      const local=matches[m.matchId];
+      if(!local||(m.updatedAt||0)>(local.updatedAt||0)){matches[m.matchId]=m;changed=true;}
+    });
+    Object.values(matches).forEach(m=>{if(!snap.docs.some(x=>x.id==="m"+m.matchId))pushCloud(m);});
+    if(changed){LS.set("lrs-matches",matches);if(view==="history")renderHistory();}
+    $("histNote").textContent="Backed up online, private to you.";
+  }catch(e){}
+})();
+
+/* ================= Scores & clock ================= */
+const halfMs=m=>(m||S).total/2*60000;
+const nowE=()=>S.elapsed+(S.running?Date.now()-S.startedAt:0);       // elapsed in current half
+function scores(m){const a=[0,0];(m.events||[]).forEach(e=>a[e.t]+=PTS[e.p][0]);return a;}
+function minuteLabel(m,h,e){
+  const hm=halfMs(m),halfMin=Math.floor(m.total/2);
+  if(e<hm)return (Math.floor(e/60000)+1+(h===2?halfMin:0))+"'";
+  return (h===1?halfMin:Math.floor(m.total))+"+"+(Math.floor((e-hm)/60000)+1)+"'";
+}
+function themeVars(t){return `--c1:${t.c1};--c2:${t.c2};--tx:${txtOn(t.c1)}`;}
+
+/* ================= Views ================= */
+function show(v){
+  view=v;
+  ["setup","match","summary","history"].forEach(x=>$("v"+x[0].toUpperCase()+x.slice(1)).hidden=x!==v);
+  if(v==="setup")renderSetup();
+  if(v==="match")renderMatch();
+  if(v==="summary")renderSummary();
+  if(v==="history")renderHistory();
+  window.scrollTo(0,0);
+}
+
+/* ---------- Setup ---------- */
+let draft=null;
+(function initSetup(){
+  const sel=$("opp");
+  sel.innerHTML='<option value="">Choose a team...</option>'+CLUBS.map(c=>`<option>${esc(c.name)}</option>`).join("")+'<option value="__other">Other team (not listed)</option>';
+  $("age").innerHTML=AGES.map(a=>`<option value="${a.id}">${a.id==="custom"?"Custom match time":`${a.label}: ${a.total} min (2 x ${halfLabel(a.total)})`}</option>`).join("");
+})();
+function clubColours(name){
+  if(colourOverrides[name])return colourOverrides[name];
+  const c=CLUBS.find(x=>x.name===name);return c?[c.c1,c.c2]:["#1b2a5b","#ffffff"];
+}
+function renderSetup(){
+  draft=editing?JSON.parse(JSON.stringify(S)):newMatch();
+  if(!editing){const last=Object.values(matches).sort((a,b)=>b.created-a.created)[0];if(last){draft.age=last.age;draft.total=last.total;}}
+  const opp=draft.teams[1-Math.max(0,draft.us)];
+  const inList=CLUBS.some(c=>c.name===opp.name);
+  $("opp").value=opp.name?(inList?opp.name:"__other"):"";
+  $("oppOther").value=inList?"":opp.name;
+  $("oppC1").value=opp.c1;$("oppC2").value=opp.c2;
+  $("age").value=draft.age;$("customMin").value=draft.age==="custom"?draft.total:"";
+  $("squad").value=squad.join("\n");
+  $("setupTitle").textContent=editing?"Edit match":"Linlithgow match day";
+  $("goBtn").textContent=editing?"Save changes":"Start match";
+  $("backBtn").hidden=!editing;
+  $("locNote").textContent="";
+  setHA(draft.venue);syncOpp();syncAge();
+  if(!editing)locate(true);
+}
+function setHA(v){draft.venue=v;[...$("ha").children].forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===v));preview();}
+[...$("ha").children].forEach(b=>b.onclick=()=>setHA(b.dataset.v));
+function syncOpp(){
+  const v=$("opp").value,other=v==="__other";
+  $("oppOther").hidden=!other;
+  $("oppColours").hidden=!v;$("colNote").hidden=!v||other;
+  if(v&&!other){const [a,b]=clubColours(v);$("oppC1").value=a;$("oppC2").value=b;}
+  preview();
+}
+$("opp").onchange=()=>{syncOpp();if($("opp").value==="__other")$("oppOther").focus();};
+$("oppOther").oninput=preview;
+[$("oppC1"),$("oppC2")].forEach(i=>i.oninput=preview);
+function syncAge(){
+  const a=AGES.find(x=>x.id===$("age").value);
+  $("customMin").hidden=a.id!=="custom";
+  const t=a.id==="custom"?(+$("customMin").value||0):a.total;
+  $("ageNote").textContent=t?`Each half is ${halfLabel(t)} minutes. These are Scottish Rugby's maximum times; time lost to injuries and stoppages is added on by the referee, and when time is up play continues until the ball is dead. Your competition may set a shorter time.`:"Enter the total match time in minutes.";
+}
+$("age").onchange=syncAge;$("customMin").oninput=syncAge;
+function oppFromForm(){
+  const v=$("opp").value;
+  const name=v==="__other"?$("oppOther").value.trim():v;
+  return {name,c1:$("oppC1").value,c2:$("oppC2").value};
+}
+function preview(){
+  const o=oppFromForm();
+  if(!o.name){$("preview").innerHTML='<span class="kit" style="background:linear-gradient(90deg,#c8102e 50%,#111 50%)"></span><b>Linlithgow</b><span style="color:var(--muted)">v ...</span>';return;}
+  const home=draft&&draft.venue==="away"?o:US,away=draft&&draft.venue==="away"?US:o;
+  const kit=t=>`<span class="kit" style="background:linear-gradient(90deg,${t.c1} 50%,${t.c2} 50%)"></span>`;
+  $("preview").innerHTML=`${kit(home)}<b>${esc(home.name)}</b><span style="color:var(--muted)">v</span><b>${esc(away.name)}</b>${kit(away)}`;
+  $("oppKit").style.background=`linear-gradient(90deg,${o.c1} 50%,${o.c2} 50%)`;
+}
+function kmBetween(a,b){
+  const R=6371,dLat=(b.lat-a.lat)*Math.PI/180,dLng=(b.lng-a.lng)*Math.PI/180;
+  const x=Math.sin(dLat/2)**2+Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.sqrt(x));
+}
+// Grounds learned from previous away matches (synced with your matches)
+function knownGrounds(){
+  const g={};
+  Object.values(matches).sort((a,b)=>a.created-b.created).forEach(m=>{
+    if(m.venue==="away"&&m.loc&&m.us>=0){const o=m.teams[1-m.us];if(o&&o.name)g[o.name]={lat:m.loc.lat,lng:m.loc.lng,c1:o.c1,c2:o.c2};}
+  });
+  return g;
+}
+function locate(auto){
+  const note=$("locNote");
+  const getPos=(ok,fail,o)=>NATIVE?NP.Geolocation.getCurrentPosition({timeout:10000,enableHighAccuracy:true}).then(ok,fail):navigator.geolocation.getCurrentPosition(ok,fail,o);
+  if(!NATIVE&&!navigator.geolocation){if(!auto)note.textContent="Location isn't available here, so choose Home or Away.";return;}
+  note.textContent="Checking where you are...";
+  getPos(p=>{
+    if(view!=="setup"||editing)return;
+    const here={lat:p.coords.latitude,lng:p.coords.longitude};draft.loc=here;
+    const km=kmBetween(here,LINLITHGOW);
+    if(km<4){setHA("home");note.textContent="You're in Linlithgow, so it's a home game. Choose who you're playing.";return;}
+    setHA("away");
+    let best=null;Object.entries(knownGrounds()).forEach(([name,g])=>{const d=kmBetween(here,g);if(d<2&&(!best||d<best.d))best={name,d,g};});
+    if(best){
+      const inList=CLUBS.some(c=>c.name===best.name);
+      $("opp").value=inList?best.name:"__other";if(!inList)$("oppOther").value=best.name;
+      syncOpp();if(!inList){$("oppC1").value=best.g.c1;$("oppC2").value=best.g.c2;preview();}
+      note.textContent=`You're at ${best.name}'s ground, so it's filled in as an away game. Change it if that's wrong.`;
+    }else note.textContent=`Away game, about ${Math.round(km)} km from Linlithgow. Choose the team and this ground will be remembered for next time.`;
+  },()=>{if(!auto)note.textContent="Location isn't available here, so choose Home or Away.";else note.textContent="";},{timeout:10000,maximumAge:0,enableHighAccuracy:true});
+}
+$("locBtn").onclick=()=>locate(false);
+$("goBtn").onclick=()=>{
+  const o=oppFromForm();
+  if(!o.name){tell("Choose who Linlithgow are playing.");$("opp").focus();return;}
+  const a=AGES.find(x=>x.id===$("age").value);
+  const total=a.id==="custom"?+$("customMin").value:a.total;
+  if(!(total>=10&&total<=120)){tell("Enter a match time between 10 and 120 minutes.");$("customMin").focus();return;}
+  if($("opp").value!=="__other"){const def=CLUBS.find(c=>c.name===o.name);
+    if(def&&(def.c1!==o.c1||def.c2!==o.c2))colourOverrides[o.name]=[o.c1,o.c2];else delete colourOverrides[o.name];
+    LS.set("lrs-colours",colourOverrides);}
+  squad=$("squad").value.split("\n").map(s=>s.trim()).filter(Boolean);LS.set("lrs-squad",squad);
+  const m=editing?S:draft;
+  const oldUs=m.us;
+  m.us=draft.venue==="away"?1:0;
+  if(editing&&oldUs>=0&&oldUs!==m.us)m.events.forEach(e=>e.t=1-e.t);
+  m.venue=draft.venue;
+  m.teams=m.us===0?[{...US},o]:[o,{...US}];
+  m.age=a.id;m.total=total;
+  if(draft.loc&&!m.loc)m.loc=draft.loc;
+  S=m;editing=false;save();show("match");
+};
+$("backBtn").onclick=()=>{editing=false;show("match");};
+$("toHist1").onclick=()=>show("history");
+
+/* ---------- Match ---------- */
+function renderMatch(){
+  const sc=scores(S);
+  $("board").innerHTML=S.teams.map((t,i)=>`
+    <div class="team" style="${themeVars(t)}" data-t="${i}">
+      <div class="stripe"></div>
+      <div class="in">
+        <div class="tname"><span>${esc(t.name)}<small>${i===0?"Home":"Away"}</small></span></div>
+        <div class="score" aria-live="polite">${sc[i]}</div>
+        <div class="tally"></div>
+        <div class="pts">
+          <button data-p="try"><b>+5</b>Try</button>
+          <button data-p="con"><b>+2</b>Conversion</button>
+          <button data-p="pen"><b>+3</b>Penalty goal</button>
+          <button data-p="drop"><b>+3</b>Drop goal</button>
+          <button data-p="ptry" class="wide"><b>+7</b>Penalty try</button>
+        </div>
+      </div>
+    </div>`).join("");
+  [...$("board").children].forEach(el=>{
+    const t=+el.dataset.t;
+    el.querySelectorAll("[data-p]").forEach(b=>b.onclick=()=>score(t,b.dataset.p));
+  });
+  refreshMatch();
+  loadPhotos();
+}
+function refreshMatch(bump){
+  const sc=scores(S);
+  [...$("board").children].forEach(el=>{
+    const t=+el.dataset.t,s=el.querySelector(".score");
+    s.textContent=sc[t];
+    if(bump===t){s.classList.remove("bump");void s.offsetWidth;s.classList.add("bump");}
+    const c={};S.events.filter(e=>e.t===t).forEach(e=>c[e.p]=(c[e.p]||0)+1);
+    el.querySelector(".tally").textContent=Object.keys(PTS).filter(k=>c[k]).map(k=>c[k]+" "+PTS[k][1].toLowerCase()+(c[k]>1?"s":"")).join(", ");
+  });
+  $("startBtn").textContent=S.running?"Stop clock":(nowE()?"Restart clock":(S.half===1?"Kick off":"Start 2nd half"));
+  $("halfBtn").textContent=S.half===1?"Half time":"Full time";
+  $("undoBtn").disabled=!S.events.length;
+  renderLog($("log"),true);
+  tick();
+}
+function tick(){
+  if(view!=="match"||!S)return;
+  const e=nowE(),hm=halfMs(),base=S.half===2?hm:0;
+  const over=e>=hm;
+  $("time").innerHTML=fmtClock(base+Math.min(e,hm))+(over?`<span class="ot">+${fmtClock(e-hm)}</span>`:"");
+  const h=$("half");h.classList.toggle("over",over);
+  h.textContent=over?"Time up. Play on until the ball is dead":(S.half===1?"First half":"Second half")+` of ${halfLabel(S.total)} min`;
+}
+setInterval(()=>{if(S&&S.running)tick();},500);
+
+let pending=null;
+function score(t,p){
+  if(S.done)return;
+  const ev={t,p,h:S.half,e:nowE(),at:Date.now()};
+  if(t===S.us&&squad.length&&p!=="ptry"){
+    pending=ev;
+    $("whoTitle").textContent=`${PTS[p][1]}: who scored?`;
+    $("whoList").innerHTML=squad.map((n,i)=>`<button data-i="${i}">${esc(n)}</button>`).join("");
+    $("whoList").querySelectorAll("button").forEach(b=>b.onclick=()=>{pending.player=squad[+b.dataset.i];commit();});
+    $("whoSheet").hidden=false;return;
+  }
+  pending=ev;commit();
+}
+function commit(){
+  $("whoSheet").hidden=true;if(!pending)return;
+  S.events.push(pending);const t=pending.t;pending=null;
+  if(navigator.vibrate)navigator.vibrate(20);
+  save();refreshMatch(t);
+}
+$("whoSkip").onclick=commit;
+$("startBtn").onclick=()=>{
+  if(S.running){S.elapsed=nowE();S.running=false;}
+  else{S.startedAt=Date.now();S.running=true;
+    if(S.half===1&&!S.kick1)S.kick1=Date.now()-S.elapsed;
+    if(S.half===2&&!S.kick2)S.kick2=Date.now()-S.elapsed;}
+  save();refreshMatch();
+};
+$("halfBtn").onclick=async()=>{
+  if(S.half===1){
+    if(!await ask("Half time? The clock stops and the second half starts from "+fmtClock(halfMs())+".","Half time"))return;
+    S.half=2;S.elapsed=0;S.running=false;S.end1=Date.now();save();refreshMatch();
+  }else endGame();
+};
+$("endBtn").onclick=endGame;
+async function endGame(){
+  const sc=scores(S);
+  if(!await ask(`End the game? Final score: ${S.teams[0].name} ${sc[0]} - ${sc[1]} ${S.teams[1].name}.`,"End game"))return;
+  S.elapsed=nowE();S.running=false;S.done=true;S.endAt=Date.now();save();show("summary");
+}
+$("undoBtn").onclick=async()=>{if(S.events.length&&await ask("Remove the last score?","Remove")){S.events.pop();save();refreshMatch();}};
+$("editBtn").onclick=()=>{editing=true;show("setup");};
+$("toHist2").onclick=()=>show("history");
+
+/* ---------- Log (scores + commentary) ---------- */
+function placeComment(c){
+  if(c.when){
+    const w=c.when;
+    if(!S.kick1)return{k:4e12+w/1e3,lab:new Date(w).toTimeString().slice(0,5)};
+    if(w<S.kick1)return{k:w-S.kick1,lab:"Pre"};
+    if(S.endAt&&w>S.endAt)return{k:3e12+(w-S.endAt),lab:"FT"};
+    if(S.kick2&&w>=S.kick2){const e=w-S.kick2;return{k:2e9+e,lab:minuteLabel(S,2,e)};}
+    if(S.end1&&w>S.end1)return{k:1.5e9,lab:"HT"};
+    const e=w-S.kick1;return{k:1e9+e,lab:minuteLabel(S,1,e)};
+  }
+  return{k:(c.h||1)*1e9+(c.e||0),lab:minuteLabel(S,c.h||1,c.e||0)};
+}
+function logItems(withComments){
+  const items=S.events.map(e=>({k:e.h*1e9+e.e,e}));
+  if(withComments)S.comments.forEach(c=>{const p=placeComment(c);items.push({k:p.k,lab:p.lab,c});});
+  items.sort((a,b)=>(a.k-b.k)||(a.e?-1:1));
+  return items;
+}
+function renderLog(el,editable,withComments=true){
+  const items=logItems(withComments);
+  if(!items.length){el.innerHTML='<li class="empty">No scores yet.</li>';return;}
+  let a=[0,0],rows=[],ht=false;
+  items.forEach(it=>{
+    if(!ht&&it.k>=1.5e9&&it.k<3e12&&(S.half===2||S.done)){rows.push(`<li class="note">Half time: ${a[0]} - ${a[1]}</li>`);ht=true;}
+    if(it.e){
+      const e=it.e;a[e.t]+=PTS[e.p][0];const tm=S.teams[e.t];
+      rows.push(`<li><span class="m">${minuteLabel(S,e.h,e.e)}</span><span class="dot" style="background:${tm.c1}"></span><span class="txt">${PTS[e.p][1]}, ${esc(tm.name)}${e.player?` <span style="color:var(--muted)">(${esc(e.player)})</span>`:""}</span><span class="s">${a[0]} - ${a[1]}</span></li>`);
+    }else{
+      const c=it.c;
+      rows.push(`<li class="com"><span class="m">${it.lab}</span><span class="txt">${c.who?`<span class="who">${esc(c.who)}</span>`:""}${esc(c.text)}</span>${editable?`<button class="x" data-c="${c.id}" aria-label="Remove comment">&times;</button>`:""}</li>`);
+    }
+  });
+  if(S.done)rows.push(`<li class="note">Full time: ${a[0]} - ${a[1]}</li>`);
+  el.innerHTML=(el.id==="log"?rows.reverse():rows).join("");
+  el.querySelectorAll("[data-c]").forEach(x=>x.onclick=()=>{S.comments=S.comments.filter(c=>String(c.id)!==x.dataset.c);save();renderLog(el,editable,withComments);});
+}
+
+/* ---------- Commentary ---------- */
+function addComment(text,who,when){
+  if(S.comments.some(x=>x.text===text&&x.who===(who||"")&&x.when===when))return false;
+  S.comments.push({id:String(Date.now())+Math.random().toString(36).slice(2,6),text,who:who||"",when});return true;
+}
+$("quickBtn").onclick=()=>{const t=$("quickC").value.trim();if(!t)return;addComment(t,"",Date.now());$("quickC").value="";save();renderLog($("log"),true);};
+$("quickC").onkeydown=e=>{if(e.key==="Enter")$("quickBtn").click();};
+document.querySelectorAll(".waOpen").forEach(b=>b.onclick=()=>{$("waStatus").textContent="";$("waSheet").hidden=false;});
+$("waClose").onclick=()=>$("waSheet").hidden=true;
+function mkDate(d,m,y,H,M,s,ap){y=+y;if(y<100)y+=2000;H=+H;
+  if(ap){ap=ap.toLowerCase().replace(/\./g,"");if(ap==="pm"&&H<12)H+=12;if(ap==="am"&&H===12)H=0;}
+  return new Date(y,+m-1,+d,H,+M,+(s||0)).getTime();}
+const PATS=[
+  [/^\[(\d{1,2})[\/.](\d{1,2})[\/.](\d{2,4}),?\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([ap]\.?m\.?)?\]\s*([^:]{1,60}):\s?(.*)$/i,m=>[mkDate(m[1],m[2],m[3],m[4],m[5],m[6],m[7]),m[8],m[9]]],
+  [/^(\d{1,2})[\/.](\d{1,2})[\/.](\d{2,4}),?\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([ap]\.?m\.?)?\s+-\s+([^:]{1,60}):\s?(.*)$/i,m=>[mkDate(m[1],m[2],m[3],m[4],m[5],m[6],m[7]),m[8],m[9]]],
+  [/^\[(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([ap]\.?m\.?)?,\s*(\d{1,2})[\/.](\d{1,2})[\/.](\d{2,4})\]\s*([^:]{1,60}):\s?(.*)$/i,m=>[mkDate(m[5],m[6],m[7],m[1],m[2],m[3],m[4]),m[8],m[9]]]
+];
+function parseChat(raw){
+  const lines=raw.replace(/[\u200e\u200f\u202a-\u202e\ufeff]/g,"").replace(/\u202f/g," ").split(/\r?\n/);
+  const out=[];
+  for(const line of lines){
+    let hit=null;for(const [re,f] of PATS){const m=line.match(re);if(m){hit=f(m);break;}}
+    if(hit)out.push({when:hit[0],who:hit[1].trim(),text:hit[2]});
+    else if(out.length&&line.trim())out[out.length-1].text+="\n"+line;
+  }
+  return out.filter(m=>m.text.trim()&&!/omitted>?$|^<Media omitted>|^This message was deleted|end-to-end encrypted/i.test(m.text.trim()));
+}
+function importText(raw){
+  const msgs=parseChat(raw);
+  if(!msgs.length){
+    const t=raw.trim();if(!t){$("waStatus").textContent="Paste some messages or choose an exported chat first.";return;}
+    addComment(t,"",S.done?0:Date.now());save();refreshAfterComments();
+    $("waStatus").textContent="No WhatsApp times found, so it was added as one comment.";$("waText").value="";return;
+  }
+  const start=(S.kick1||S.created)-30*60000,end=(S.endAt||Date.now())+30*60000;
+  const keep=msgs.filter(m=>m.when>=start&&m.when<=end);
+  let n=0;keep.forEach(m=>{if(addComment(m.text.trim(),m.who,m.when))n++;});
+  save();refreshAfterComments();$("waText").value="";
+  $("waStatus").textContent=n?`Added ${n} message${n>1?"s":""}.`:(keep.length?"Those messages are already in.":"No messages found from around the time of this match.");
+}
+function refreshAfterComments(){if(view==="match")renderLog($("log"),true);if(view==="summary")renderSummary();}
+$("waAdd").onclick=()=>importText($("waText").value);
+$("waFileBtn").onclick=()=>$("waFile").click();
+$("waFile").onchange=async e=>{
+  const f=e.target.files&&e.target.files[0];e.target.value="";if(!f)return;
+  $("waStatus").textContent="Reading chat...";
+  try{let txt;
+    if(/\.zip$/i.test(f.name)||f.type.includes("zip")){
+      const z=await JSZip.loadAsync(f);const en=Object.values(z.files).find(x=>/\.txt$/i.test(x.name));
+      if(!en)throw 0;txt=await en.async("string");
+    }else txt=await f.text();
+    importText(txt);
+  }catch(err){$("waStatus").textContent="That file couldn't be read. Choose the .txt or .zip from WhatsApp's Export chat.";}
+};
+
+/* ---------- Photos (on this phone + camera roll) ---------- */
+let dbp=null;
+function pdb(){if(dbp)return dbp;dbp=new Promise((res,rej)=>{try{const r=indexedDB.open("rugby-photos",1);
+  r.onupgradeneeded=()=>r.result.createObjectStore("photos",{keyPath:"id"});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);}catch(e){rej(e)}});return dbp;}
+async function store(mode,fn){const d=await pdb();return new Promise((res,rej)=>{const tx=d.transaction("photos",mode);const r=fn(tx.objectStore("photos"));tx.oncomplete=()=>res(r&&r.result);tx.onerror=()=>rej(tx.error);});}
+let photos=[],urls=[],current=null,dl=null;
+(async()=>{try{dl=await claude.use("downloads");}catch(e){}})();
+async function getPhotos(id){try{const all=await store("readonly",st=>st.getAll());return (all||[]).filter(p=>p.matchId===id).sort((a,b)=>a.id-b.id);}catch(e){return[];}}
+async function loadPhotos(){
+  photos=await getPhotos(S.matchId);
+  urls.forEach(u=>URL.revokeObjectURL(u));urls=[];
+  const g=view==="summary"?$("sumGallery"):$("gallery");
+  $("saveAllBtn").hidden=!(view==="summary"&&photos.length);
+  if(!photos.length){g.innerHTML='<div class="empty">No photos yet.</div>';return;}
+  g.innerHTML="";
+  photos.forEach(p=>{const u=URL.createObjectURL(p.blob);urls.push(u);p.url=u;
+    const b=document.createElement("button");b.innerHTML=`<img alt="Photo at ${esc(p.lab||p.min+"'")}"><span>${esc(p.lab||p.min+"'")}</span>`;
+    b.querySelector("img").src=u;b.onclick=()=>openPhoto(p);g.appendChild(b);});
+}
+function resize(file){return new Promise((res,rej)=>{const img=new Image(),u=URL.createObjectURL(file);
+  img.onload=()=>{const sc=Math.min(1,2048/Math.max(img.width,img.height));const c=document.createElement("canvas");
+    c.width=Math.round(img.width*sc);c.height=Math.round(img.height*sc);c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+    URL.revokeObjectURL(u);c.toBlob(b=>b?res(b):rej(0),"image/jpeg",.9);};
+  img.onerror=()=>{URL.revokeObjectURL(u);rej(0)};img.src=u;});}
+const oppTeam=m=>m.us<0?m.teams[1]:m.teams[1-m.us];
+const photoName=p=>`Linlithgow-Rugby-${slug(oppTeam(S).name||"match")}-${new Date(S.created).toISOString().slice(0,10)}-${p.id}.jpg`;
+async function shareFiles(files,text){
+  try{
+    if(navigator.canShare&&navigator.canShare({files})){await navigator.share(text?{files,text}:{files});return "shared";}
+  }catch(e){if(e&&e.name==="AbortError")return "cancelled";}
+  if(dl){for(const f of files){try{await dl.save({filename:f.name,data:f});}catch(e){}}return "downloaded";}
+  return "unavailable";
+}
+$("camBtn").onclick=()=>$("camInput").click();
+$("camInput").onchange=async e=>{
+  const f=e.target.files&&e.target.files[0];e.target.value="";if(!f)return;
+  try{
+    const blob=await resize(f);const h=S.half,el=nowE();
+    const rec={id:Date.now(),matchId:S.matchId,lab:S.done?"FT":minuteLabel(S,h,el),score:scores(S).join(" - "),blob};
+    await store("readwrite",st=>st.put(rec));
+    loadPhotos();
+    const file=new File([blob],photoName(rec),{type:"image/jpeg"});
+    if(NATIVE){
+      try{await saveToAlbum(file);showToast(`Photo saved at ${rec.lab} to the ${ALBUM} album.`);}
+      catch(err){showToast("Saved in the app, but not to Photos. Allow photo access in Settings, then try again.",()=>saveToAlbum(file).then(()=>showToast("Saved to "+ALBUM+".")).catch(()=>{}));}
+    }else showToast(`Photo saved at ${rec.lab}.`,()=>shareFiles([file]));
+  }catch(err){showToast("That photo couldn't be saved. Try again.");}
+};
+let toastTimer;
+function showToast(msg,action){
+  $("toastMsg").textContent=msg;$("toastBtn").hidden=!action;$("toastBtn").onclick=()=>{$("toast").hidden=true;action&&action();};
+  $("toast").hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$("toast").hidden=true,8000);
+}
+function openPhoto(p){current=p;$("viewImg").src=p.url;$("viewCap").textContent=`${p.lab||p.min+"'"}, score ${p.score}`;$("viewer").hidden=false;}
+$("vClose").onclick=()=>{$("viewer").hidden=true;current=null;};
+$("vSave").onclick=async()=>{if(current&&NATIVE){try{await saveToAlbum(new File([current.blob],photoName(current),{type:"image/jpeg"}));showToast("Saved to "+ALBUM+".");}catch(e){tell("Couldn't save to Photos. Check photo access in Settings.");}return;}if(current){const r=await shareFiles([new File([current.blob],photoName(current),{type:"image/jpeg"})]);if(r==="unavailable")tell("Saving isn't available here. Press and hold the photo to save it instead.");}};
+$("vDel").onclick=async()=>{if(!current||!await ask("Delete this photo from the app?","Delete"))return;
+  try{await store("readwrite",st=>st.delete(current.id));}catch(e){}$("viewer").hidden=true;current=null;loadPhotos();};
+$("saveAllBtn").onclick=async()=>{
+  const files=photos.map(p=>new File([p.blob],photoName(p),{type:"image/jpeg"}));
+  if(NATIVE){let n=0;for(const f of files){try{await saveToAlbum(f);n++;}catch(e){}}
+    tell(n?`Saved ${n} photo${n>1?"s":""} to the ${ALBUM} album.`:"Couldn't save to Photos. Check photo access in Settings.");return;}
+  const r=await shareFiles(files);if(r==="unavailable")tell("Saving isn't available here. Open each photo and press and hold to save.");
+};
+async function clearPhotos(id){try{const all=await store("readonly",st=>st.getAll());
+  await store("readwrite",st=>{(all||[]).filter(p=>p.matchId===id).forEach(p=>st.delete(p.id));});}catch(e){}}
+
+/* ---------- Summary ---------- */
+function verdict(m){
+  if(m.us<0)return"";const sc=scores(m),u=sc[m.us],t=sc[1-m.us];
+  return u>t?"Linlithgow win":u<t?"Linlithgow lose":"Draw";
+}
+function metaLine(m){
+  const a=AGES.find(x=>x.id===m.age);
+  return [fmtDate(m.created),m.us<0?"":(m.venue==="away"?"Away":"Home, Linlithgow"),a&&a.id!=="custom"?a.label:`${m.total} min`].filter(Boolean).join(" · ");
+}
+function renderSummary(){
+  const sc=scores(S),[h,a]=S.teams;
+  $("resultCard").innerHTML=`
+    <div class="bands"><div style="${themeVars(h)}"></div><div style="${themeVars(a)}"></div></div>
+    <div class="body">
+      <div class="ft">FULL TIME</div>
+      <div class="line"><div class="nm">${esc(h.name)}</div><div class="big">${sc[0]} - ${sc[1]}</div><div class="nm">${esc(a.name)}</div></div>
+      <div class="verdict">${esc(verdict(S))}</div>
+      <div class="meta">${esc(metaLine(S))}</div>
+    </div>`;
+  renderLog($("sumLog"),true,$("incCom").checked);
+  $("shareStatus").textContent="";
+  loadPhotos();
+}
+$("incCom").onchange=()=>renderLog($("sumLog"),true,$("incCom").checked);
+function resultText(withCom){
+  const sc=scores(S),[h,a]=S.teams;
+  const L=[`🏉 ${h.name} ${sc[0]} - ${sc[1]} ${a.name} (Full time)`,metaLine(S)];
+  const v=verdict(S);if(v)L.push(v);
+  L.push("","Scoring:");
+  let run=[0,0],ht=false;const items=logItems(withCom);
+  if(!items.length)L.push("No scores");
+  items.forEach(it=>{
+    if(!ht&&it.k>=1.5e9&&it.k<3e12){L.push(`Half time: ${run[0]} - ${run[1]}`);ht=true;}
+    if(it.e){const e=it.e;run[e.t]+=PTS[e.p][0];
+      L.push(`${minuteLabel(S,e.h,e.e)} ${PTS[e.p][1]}, ${S.teams[e.t].name}${e.player?` (${e.player})`:""}  ${run[0]} - ${run[1]}`);}
+    else L.push(`${it.lab} 💬 ${it.c.who?it.c.who+": ":""}${it.c.text}`);
+  });
+  L.push(`Full time: ${run[0]} - ${run[1]}`);
+  return L.join("\n");
+}
+async function resultImage(){
+  await document.fonts.ready;
+  const W=1080,H=1350,c=document.createElement("canvas");c.width=W;c.height=H;const x=c.getContext("2d");
+  x.fillStyle="#10281a";x.fillRect(0,0,W,H);
+  for(let y=0;y<H;y+=96){x.fillStyle=(y/96)%2?"#173622":"#10281a";x.fillRect(0,y,W,96);}
+  const sc=scores(S);
+  S.teams.forEach((t,i)=>{for(let k=0;k<W/2;k+=40){x.fillStyle=(k/40)%2?t.c2:t.c1;x.fillRect(i*W/2+k,0,40,36);}});
+  x.textAlign="center";x.fillStyle="#a9c2ae";x.font="700 40px 'Saira Condensed',Impact,sans-serif";x.fillText("FULL TIME",W/2,110);
+  x.fillStyle="#f3f5ef";x.font="800 230px 'Saira Condensed',Impact,sans-serif";x.fillText(`${sc[0]} - ${sc[1]}`,W/2,330);
+  x.font="700 48px 'Barlow',system-ui,sans-serif";
+  const fit=(s,w)=>{let t=s;while(x.measureText(t).width>w&&t.length>3)t=t.slice(0,-2);return t===s?s:t+"…";};
+  x.fillText(fit(S.teams[0].name,460),W/4+10,420);x.fillText(fit(S.teams[1].name,460),W*3/4-10,420);
+  x.font="800 64px 'Saira Condensed',Impact,sans-serif";x.fillText(verdict(S),W/2,510);
+  x.fillStyle="#a9c2ae";x.font="400 36px 'Barlow',system-ui,sans-serif";x.fillText(metaLine(S),W/2,565);
+  x.textAlign="left";let y=650,run=[0,0];
+  const evs=S.events.slice().sort((a,b)=>(a.h*1e9+a.e)-(b.h*1e9+b.e));
+  const max=12;
+  evs.slice(0,max).forEach(e=>{run[e.t]+=PTS[e.p][0];
+    x.fillStyle=S.teams[e.t].c1;x.beginPath();x.arc(90,y-12,13,0,7);x.fill();x.strokeStyle="#fff";x.lineWidth=2;x.stroke();
+    x.fillStyle="#a9c2ae";x.font="700 38px 'Saira Condensed',sans-serif";x.fillText(minuteLabel(S,e.h,e.e),120,y);
+    x.fillStyle="#f3f5ef";x.font="600 36px 'Barlow',system-ui,sans-serif";
+    x.fillText(fit(`${PTS[e.p][1]}, ${S.teams[e.t].name}${e.player?` (${e.player})`:""}`,700),220,y);
+    x.textAlign="right";x.fillText(`${run[0]} - ${run[1]}`,W-80,y);x.textAlign="left";y+=52;});
+  if(evs.length>max){x.fillStyle="#a9c2ae";x.fillText(`+ ${evs.length-max} more`,220,y);}
+  for(let k=0;k<W;k+=40){x.fillStyle=(k/40)%2?"#111":"#c8102e";x.fillRect(k,H-36,40,36);}
+  x.textAlign="center";x.fillStyle="#f3f5ef";x.font="700 34px 'Saira Condensed',sans-serif";x.fillText("LINLITHGOW RUGBY",W/2,H-60);
+  return new Promise(r=>c.toBlob(b=>r(new File([b],`Linlithgow-result-${new Date(S.created).toISOString().slice(0,10)}.png`,{type:"image/png"})),"image/png"));
+}
+$("shareBtn").onclick=async()=>{
+  const text=resultText($("incCom").checked);
+  if(NATIVE){await nativeShare(text,[await resultImage()]);return;}
+  try{
+    const img=await resultImage();
+    if(navigator.canShare&&navigator.canShare({files:[img]})){await navigator.share({files:[img],text});return;}
+    if(navigator.share){await navigator.share({title:"Linlithgow result",text});return;}
+  }catch(e){if(e&&e.name==="AbortError")return;}
+  copyText(text);
+};
+async function copyText(text){
+  try{await navigator.clipboard.writeText(text);$("shareStatus").textContent="Result copied. Paste it into WhatsApp, a text or an email.";}
+  catch(e){const t=document.createElement("textarea");t.value=text;document.body.appendChild(t);t.select();
+    let ok=false;try{ok=document.execCommand("copy")}catch(_){}t.remove();
+    $("shareStatus").textContent=ok?"Result copied. Paste it into WhatsApp, a text or an email.":"Copying isn't available here.";}
+}
+$("copyBtn").onclick=()=>copyText(resultText($("incCom").checked));
+$("imgBtn").onclick=async()=>{if(NATIVE){try{await saveToAlbum(await resultImage());$("shareStatus").textContent="Result image saved to "+ALBUM+".";}catch(e){$("shareStatus").textContent="Couldn't save to Photos. Check photo access in Settings.";}return;}const r=await shareFiles([await resultImage()]);if(r==="unavailable")$("shareStatus").textContent="Saving images isn't available here.";};
+$("reopenBtn").onclick=async()=>{if(!await ask("Reopen this game to add or change scores?","Reopen"))return;S.done=false;save();show("match");};
+$("toHist3").onclick=()=>show("history");
+$("newBtn").onclick=()=>{S=null;LS.set("lrs-current","");editing=false;show("setup");};
+
+/* ---------- History ---------- */
+let pendingDel=null;
+function renderHistory(){
+  const list=Object.values(matches).sort((a,b)=>b.created-a.created);
+  const el=$("hist");
+  $("histBack").hidden=!(S&&!S.done&&matches[S.matchId]);
+  $("delAllWrap").hidden=!list.length;
+  if(!list.length){el.innerHTML='<li class="empty">No matches yet.</li>';return;}
+  el.innerHTML=list.map(m=>{
+    const sc=scores(m),v=verdict(m),opp=m.us<0?`${m.teams[0].name} v ${m.teams[1].name}`:`${m.venue==="away"?"at":"v"} ${m.teams[1-m.us].name}`;
+    const wl=!m.done?"":v.includes("win")?'<span class="wl">W</span>':v.includes("lose")?'<span class="wl L">L</span>':v?'<span class="wl D">D</span>':"";
+    return `<li data-id="${m.matchId}">
+      <div class="row">
+        <button class="open"><b>${wl}${esc(opp)}</b><span>${esc(metaLine(m))}${m.done?"":" · in progress"}</span></button>
+        <span class="sc">${sc[0]} - ${sc[1]}</span>
+        <button class="ghost del" style="padding:8px 10px">Delete</button>
+      </div>
+      <div class="confirm" ${pendingDel===m.matchId?"":"hidden"}>
+        <button class="danger yes">Yes, delete</button><button class="ghost no">Cancel</button>
+      </div></li>`;}).join("");
+  el.querySelectorAll("li[data-id]").forEach(li=>{
+    const id=li.dataset.id;
+    li.querySelector(".open").onclick=()=>{S=matches[id];show(S.done?"summary":"match");if(!S.done)LS.set("lrs-current",id);};
+    li.querySelector(".del").onclick=()=>{pendingDel=id;renderHistory();};
+    li.querySelector(".no").onclick=()=>{pendingDel=null;renderHistory();};
+    li.querySelector(".yes").onclick=()=>{deleteMatch(id);pendingDel=null;renderHistory();};
+  });
+}
+async function deleteMatch(id){
+  delete matches[id];LS.set("lrs-matches",matches);
+  if(S&&S.matchId===id){S=null;LS.set("lrs-current","");}
+  clearPhotos(id);
+  if(cloud)try{await cloud.doc("m"+id).delete();}catch(e){}
+}
+$("delAll").onclick=()=>{$("delAll").hidden=true;$("delAllConfirm").hidden=false;};
+$("delAllNo").onclick=()=>{$("delAll").hidden=false;$("delAllConfirm").hidden=true;};
+$("delAllYes").onclick=()=>{Object.keys(matches).forEach(deleteMatch);$("delAll").hidden=false;$("delAllConfirm").hidden=true;renderHistory();};
+$("histNew").onclick=()=>{S=null;editing=false;show("setup");};
+$("histBack").onclick=()=>show("match");
+
+/* ---------- Start ---------- */
+if(NATIVE)$("histNote").textContent="Matches are saved on this iPhone.";
+if(currentId&&matches[currentId]&&!matches[currentId].done){S=matches[currentId];show("match");}
+else show("setup");
+</script>
+</body>
+</html>

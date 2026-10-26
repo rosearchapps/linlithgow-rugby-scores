@@ -1,0 +1,9 @@
+{
+  "appId": "com.linlithgowrugby.scores",
+  "appName": "Linlithgow Rugby",
+  "webDir": "www",
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#1d4a2c"
+  }
+}
